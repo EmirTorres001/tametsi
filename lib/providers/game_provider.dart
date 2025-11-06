@@ -9,7 +9,6 @@ import '../services/level_service.dart';
 enum GameStatus { playing, won, lost }
 
 // --- Clase que representa el Estado del Juego ---
-// Es inmutable, cada cambio crea una nueva instancia.
 @immutable
 class GameState {
   final List<List<Cell>> board;
@@ -18,9 +17,11 @@ class GameState {
   final int flagCount;
   final Duration timer;
   final bool isLoading;
+  final String topology; // <-- MODIFICADO: Añadido
 
   const GameState({
     required this.board,
+    this.topology = 'square', // <-- MODIFICADO: Añadido
     this.status = GameStatus.playing,
     this.mineCount = 0,
     this.flagCount = 0,
@@ -36,6 +37,7 @@ class GameState {
     int? flagCount,
     Duration? timer,
     bool? isLoading,
+    String? topology, // <-- MODIFICADO: Añadido
   }) {
     return GameState(
       board: board ?? this.board,
@@ -44,6 +46,7 @@ class GameState {
       flagCount: flagCount ?? this.flagCount,
       timer: timer ?? this.timer,
       isLoading: isLoading ?? this.isLoading,
+      topology: topology ?? this.topology, // <-- MODIFICADO: Añadido
     );
   }
 }
@@ -73,6 +76,7 @@ class GameNotifier extends StateNotifier<GameState> {
       timer: Duration.zero,
       status: GameStatus.playing,
       isLoading: false, // Termina de cargar
+      topology: level.topology, // <-- MODIFICADO: Se establece la topología
     );
     _startTimer();
   }
@@ -107,7 +111,8 @@ class GameNotifier extends StateNotifier<GameState> {
       return;
     }
 
-    _revealEmptyCells(newBoard, x, y);
+    // <-- MODIFICADO: Pasa la topología a la función de revelado
+    _revealEmptyCells(newBoard, x, y, state.topology);
     state = state.copyWith(board: newBoard);
     _checkWinCondition();
   }
@@ -144,10 +149,12 @@ class GameNotifier extends StateNotifier<GameState> {
     for (var row in state.board) {
       for (var cell in row) {
         if (cell.isBlocked) continue;
-        if (cell.isMine && cell.state != CellState.flagged)
+        if (cell.isMine && cell.state != CellState.flagged) {
           allMinesFlagged = false;
-        if (!cell.isMine && cell.state == CellState.hidden)
+        }
+        if (!cell.isMine && cell.state == CellState.hidden) {
           allSafeRevealed = false;
+        }
       }
     }
 
@@ -157,19 +164,27 @@ class GameNotifier extends StateNotifier<GameState> {
     }
   }
 
-  void _revealEmptyCells(List<List<Cell>> board, int x, int y) {
-    if (x < 0 || x >= board.length || y < 0 || y >= board[0].length) return;
+  // <-- MODIFICADO: Acepta topología
+  void _revealEmptyCells(
+    List<List<Cell>> board,
+    int x,
+    int y,
+    String topology,
+  ) {
+    int rows = board.length;
+    int cols = board[0].length;
+
+    if (x < 0 || x >= rows || y < 0 || y >= cols) return;
     final cell = board[x][y];
     if (cell.state == CellState.revealed || cell.isBlocked) return;
 
     cell.state = CellState.revealed;
 
     if (cell.adjacentMines == 0) {
-      for (int i = -1; i <= 1; i++) {
-        for (int j = -1; j <= 1; j++) {
-          if (i == 0 && j == 0) continue;
-          _revealEmptyCells(board, x + i, y + j);
-        }
+      // <-- MODIFICADO: Usa la nueva lógica de vecinos
+      final neighbors = _getNeighbors(x, y, rows, cols, topology);
+      for (final n in neighbors) {
+        _revealEmptyCells(board, n[0], n[1], topology);
       }
     }
   }
@@ -219,41 +234,143 @@ List<List<Cell>> _createBoardFromLevel(Level level) {
     (x) => List.generate(cols, (y) => Cell(x: x, y: y)),
   );
 
-  int totalMines = 0;
+  // Coloca minas y celdas bloqueadas
   for (int x = 0; x < rows; x++) {
     for (int y = 0; y < cols; y++) {
       final char = level.layout[x][y];
       if (char == '0') board[x][y].isBlocked = true;
       if (char == 'M') {
         board[x][y].isMine = true;
-        totalMines++;
       }
     }
   }
 
+  // Calcula las minas adyacentes para cada celda
   for (int x = 0; x < rows; x++) {
     for (int y = 0; y < cols; y++) {
-      if (!board[x][y].isMine) {
-        int adjacentMines = 0;
-        for (int i = -1; i <= 1; i++) {
-          for (int j = -1; j <= 1; j++) {
-            if (i == 0 && j == 0) continue;
-            int nx = x + i;
-            int ny = y + j;
-            if (nx >= 0 &&
-                nx < rows &&
-                ny >= 0 &&
-                ny < cols &&
-                board[nx][ny].isMine) {
-              adjacentMines++;
-            }
-          }
-        }
-        board[x][y].adjacentMines = adjacentMines;
+      if (!board[x][y].isMine && !board[x][y].isBlocked) {
+        // <-- MODIFICADO: Usa la nueva función de conteo
+        board[x][y].adjacentMines = _countAdjacentMines(
+          board,
+          x,
+          y,
+          level.topology,
+          rows,
+          cols,
+        );
       }
     }
   }
   return board;
+}
+
+// --- NUEVA FUNCIÓN: Obtiene una lista de coordenadas de vecinos [x, y] ---
+// Usada por _revealEmptyCells y _countAdjacentMines
+List<List<int>> _getNeighbors(
+  int x,
+  int y,
+  int rows,
+  int cols,
+  String topology,
+) {
+  List<List<int>> neighbors = [];
+
+  switch (topology) {
+    case 'square':
+      for (int i = -1; i <= 1; i++) {
+        for (int j = -1; j <= 1; j++) {
+          if (i == 0 && j == 0) continue;
+          neighbors.add([x + i, y + j]);
+        }
+      }
+      break;
+
+    case 'hexagon':
+      // Lógica para "pointy top" hexágonos en un array 2D
+      // (asumiendo "odd-q" o "odd-col" - columnas impares están más bajas)
+      // (x=fila, y=columna)
+
+      bool isOddCol = y % 2 != 0;
+      List<List<int>> directions;
+      if (isOddCol) {
+        // Vecinos de una columna impar (más baja)
+        directions = [
+          [-1, 0], // N
+          [0, -1], // NW
+          [1, -1], // SW
+          [1, 0], // S
+          [1, 1], // SE
+          [0, 1], // NE
+        ];
+      } else {
+        // Vecinos de una columna par (más alta)
+        directions = [
+          [-1, 0], // N
+          [-1, -1], // NW
+          [0, -1], // SW
+          [1, 0], // S
+          [0, 1], // SE
+          [-1, 1], // NE
+        ];
+      }
+      for (final d in directions) {
+        neighbors.add([x + d[0], y + d[1]]);
+      }
+      break;
+
+    case 'triangle':
+      // (x + y) % 2 == 0 significa que apunta hacia arriba
+
+      bool isPointingUp = (x + y) % 2 == 0;
+      List<List<int>> directions;
+      if (isPointingUp) {
+        // ▲ (apunta hacia arriba)
+        directions = [
+          [1, 0], // Abajo
+          [0, -1], // Izquierda
+          [0, 1], // Derecha
+        ];
+      } else {
+        // ▼ (apunta hacia abajo)
+        directions = [
+          [-1, 0], // Arriba
+          [0, -1], // Izquierda
+          [0, 1], // Derecha
+        ];
+      }
+      for (final d in directions) {
+        neighbors.add([x + d[0], y + d[1]]);
+      }
+      break;
+  }
+
+  // Filtra los vecinos que están fuera del tablero
+  return neighbors.where((n) {
+    int nx = n[0];
+    int ny = n[1];
+    return nx >= 0 && nx < rows && ny >= 0 && ny < cols;
+  }).toList();
+}
+
+// --- NUEVA FUNCIÓN: Cuenta las minas adyacentes según la topología ---
+int _countAdjacentMines(
+  List<List<Cell>> board,
+  int x,
+  int y,
+  String topology,
+  int rows,
+  int cols,
+) {
+  int adjacentMines = 0;
+  final neighbors = _getNeighbors(x, y, rows, cols, topology);
+
+  for (final n in neighbors) {
+    // No es necesario comprobar los límites aquí, _getNeighbors ya lo hizo
+    if (board[n[0]][n[1]].isMine) {
+      adjacentMines++;
+    }
+  }
+  return adjacentMines;
 }
 
 // --- El Provider Principal ---

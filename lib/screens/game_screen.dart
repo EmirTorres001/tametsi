@@ -4,19 +4,17 @@ import 'dart:async';
 
 // IMPORTACIONES
 import '../providers/game_provider.dart';
-import '../widgets/board_widget.dart';
+import '../widgets/board_widget.dart'; // Asegúrate que este archivo exista
 import '../services/level_service.dart';
 import '../services/persistence_service.dart';
 
 // PROVIDERS
 final levelServiceProvider = Provider<LevelService>((ref) => LevelService());
-// AÑADE ESTA LÍNEA - Esta era la pieza que faltaba en este archivo
 final persistenceServiceProvider = Provider<PersistenceService>(
   (ref) => PersistenceService(),
 );
 
 class GameScreen extends ConsumerStatefulWidget {
-  // ... el resto de tu código es correcto y no necesita cambios ...
   final String levelAssetPath;
 
   const GameScreen({super.key, required this.levelAssetPath});
@@ -132,7 +130,8 @@ class _GameScreenState extends ConsumerState<GameScreen> {
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(8.0),
-                    child: BoardWidget(),
+                    // ¡Asegúrate de que 'const' esté aquí!
+                    child: const BoardWidget(),
                   ),
                 ),
               ],

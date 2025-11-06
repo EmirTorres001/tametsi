@@ -1,0 +1,15 @@
+{
+  "name": "El Panal Sencillo",
+  "rows": 7,
+  "cols": 5,
+  "topology": "hexagon",
+  "layout": [
+    "01M10",
+    "11111",
+    "11M11",
+    "01110",
+    "01M10",
+    "01110",
+    "00100"
+  ]
+}
