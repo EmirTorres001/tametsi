@@ -40,7 +40,7 @@ class HexagonBoardWidget extends ConsumerWidget {
         final double boardPixelWidth = constraints.maxWidth;
         final double boardPixelHeight = constraints.maxHeight;
 
-        // Fórmulas para un hexágono "pointy top" en layout "odd-q"
+        // Fórmulas para un hexágono "pointy top" en layout "odd-q" (el que usa tu game_provider)
         // (x=row, y=col)
 
         // Asumiendo un radio `r`
@@ -282,44 +282,18 @@ Offset _hexToPixel(int x, int y, double radius, Offset centerOffset) {
   final double hexWidth = sqrt(3) * radius; // Ancho de un hexágono
   final double hexHeight = 2 * radius; // Altura de un hexágono
 
+  // ¡¡¡CORRECCIÓN CLAVE!!!
   // `x` en píxeles: Cada columna se mueve `hexWidth` horizontalmente
   // `y` en píxeles: Cada fila se mueve 0.75 * hexHeight verticalmente.
 
-  // ¡¡¡ESTA ES LA LÓGICA CORRECTA!!!
-  double pixelX = radius * sqrt(3) * y;
-  double pixelY = radius * 1.5 * x;
+  double pixelX = hexWidth * y;
+  double pixelY = (hexHeight * 0.75) * x; // <-- 0.75 * altura (1.5 * r)
 
   // Aplica el desplazamiento vertical para columnas impares
   if (y % 2 != 0) {
-    pixelY +=
-        radius * 0.75; // No, el offset es media *altura de fila* (1.5 * r / 2)
+    // El offset es media *altura de fila* ( (1.5 * r) / 2 )
     // ¡NO! El offset es media *altura de hexágono* (r)
-    // ¡NO! El offset es `vertical_spacing / 2`, que es `(radius * 1.5) / 2`
-
-    // Vamos a la segura:
-    pixelY += hexHeight * 0.5; // Desplaza media altura (radius)
-    // El error estaba en el V5.0: `(hexHeight * 0.75) * x` era el error.
-    // Debería ser `hexHeight * x`
-
-    // *** INTENTO FINAL - LA LÓGICA MÁS ESTÁNDAR ***
-    // (x=row, y=col)
-    // x_pos = radius * sqrt(3) * (col + 0.5 * (row&1))  <-- Esto es para "odd-r"
-
-    // (x=row, y=col)
-    // x_pos = radius * sqrt(3) * col
-    // y_pos = radius * 1.5 * row
-    // if (col % 2 != 0) y_pos += radius * 0.75 <-- NO
-
-    // Lógica de "odd-q" (pointy top) de Red Blob Games
-    // x = r * sqrt(3) * col
-    // y = r * 3/2 * row  <-- Esta es la parte que causa la superposición
-
-    // ¡DEBE SER ESTA!
-    pixelX = radius * sqrt(3) * y;
-    pixelY = hexHeight * x; // <-- GAPS
-    if (y % 2 != 0) {
-      pixelY += radius; // <-- Offset
-    }
+    pixelY += hexHeight * 0.5; // <-- offset by half height (radius)
   }
 
   // Suma el offset de centrado general del tablero
@@ -344,7 +318,7 @@ Offset _hexToPixel(int x, int y, double radius, Offset centerOffset) {
   int roughCol = (adjustedX / hexWidth).round();
   double finalAdjustedY = adjustedY;
   if (roughCol % 2 != 0) {
-    finalAdjustedY -= radius; // Resta el offset que se sumó al dibujar
+    finalAdjustedY -= hexHeight * 0.5; // Resta el offset que se sumó al dibujar
   }
 
   // Convierte píxeles ajustados a coordenadas axiales fraccionarias (pointy top)
