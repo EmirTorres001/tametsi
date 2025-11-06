@@ -1,0 +1,13 @@
+{
+  "name": "Cuadrado Simple",
+  "rows": 5,
+  "cols": 5,
+  "topology": "square",
+  "layout": [
+    "11111",
+    "1M1M1",
+    "11111",
+    "1M1M1",
+    "11111"
+  ]
+}
