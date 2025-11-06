@@ -286,31 +286,31 @@ List<List<int>> _getNeighbors(
       break;
 
     case 'hexagon':
-      // Lógica para "pointy top" hexágonos en un array 2D
-      // (asumiendo "odd-q" o "odd-col" - columnas impares están más bajas)
+      // --- ¡NUEVA LÓGICA DE VECINOS PARA "FLAT-TOP, ODD-Q"! ---
       // (x=fila, y=columna)
+      // "odd-q" significa que las columnas impares (y=1, 3, 5...) están desplazadas verticalmente
 
       bool isOddCol = y % 2 != 0;
       List<List<int>> directions;
       if (isOddCol) {
-        // Vecinos de una columna impar (más baja)
+        // Vecinos de una columna impar (desplazada hacia abajo)
         directions = [
-          [-1, 0], // N
-          [0, -1], // NW
-          [1, -1], // SW
-          [1, 0], // S
+          [0, -1], // O
+          [0, 1], // E
+          [-1, 0], // NO
+          [1, 0], // SO
+          [-1, 1], // NE
           [1, 1], // SE
-          [0, 1], // NE
         ];
       } else {
-        // Vecinos de una columna par (más alta)
+        // Vecinos de una columna par
         directions = [
-          [-1, 0], // N
-          [-1, -1], // NW
-          [0, -1], // SW
-          [1, 0], // S
-          [0, 1], // SE
-          [-1, 1], // NE
+          [0, -1], // O
+          [0, 1], // E
+          [-1, -1], // NO
+          [1, -1], // SO
+          [-1, 0], // NE
+          [1, 0], // SE
         ];
       }
       for (final d in directions) {
@@ -318,24 +318,21 @@ List<List<int>> _getNeighbors(
       }
       break;
 
+    // (el case 'triangle' se queda igual)
     case 'triangle':
-      // (x + y) % 2 == 0 significa que apunta hacia arriba
-
       bool isPointingUp = (x + y) % 2 == 0;
       List<List<int>> directions;
       if (isPointingUp) {
-        // ▲ (apunta hacia arriba)
         directions = [
-          [1, 0], // Abajo
-          [0, -1], // Izquierda
-          [0, 1], // Derecha
+          [1, 0],
+          [0, -1],
+          [0, 1],
         ];
       } else {
-        // ▼ (apunta hacia abajo)
         directions = [
-          [-1, 0], // Arriba
-          [0, -1], // Izquierda
-          [0, 1], // Derecha
+          [-1, 0],
+          [0, -1],
+          [0, 1],
         ];
       }
       for (final d in directions) {

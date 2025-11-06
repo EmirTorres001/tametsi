@@ -6,7 +6,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../models/cell_model.dart';
 import '../providers/game_provider.dart';
 
-/// Mapa de colores para los números
 const Map<int, Color> numberColors = {
   1: Colors.blue,
   2: Colors.green,
@@ -18,7 +17,6 @@ const Map<int, Color> numberColors = {
   8: Colors.grey,
 };
 
-/// Widget principal que maneja el estado, el tamaño y las interacciones
 class HexagonBoardWidget extends ConsumerWidget {
   const HexagonBoardWidget({super.key});
 
@@ -26,52 +24,41 @@ class HexagonBoardWidget extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final gameState = ref.watch(gameProvider);
     final board = gameState.board;
-
-    if (board.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
+    if (board.isEmpty) return const SizedBox.shrink();
     final int rowCount = board.length;
     final int colCount = board[0].length;
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // --- 1. Calcular el Tamaño del Hexágono (V6.0 - CORREGIDO) ---
+        // --- 1. Calcular Tamaño para "FLAT-TOP, ODD-Q" (V7.0 - ¡Correcto para la imagen!) ---
         final double boardPixelWidth = constraints.maxWidth;
         final double boardPixelHeight = constraints.maxHeight;
 
-        // Fórmulas para un hexágono "pointy top" en layout "odd-q" (el que usa tu game_provider)
-        // (x=row, y=col)
-
-        // Asumiendo un radio `r`
-        // Ancho de un hexágono (de lado a lado) es sqrt(3) * r
-        // Altura de un hexágono (de punta a punta) es 2 * r
+        // Ancho de un hexágono (de lado a lado) es 2 * r
+        // Altura de un hexágono (de punta a punta) es sqrt(3) * r
 
         // Ancho total del tablero:
-        // Cada columna ocupa sqrt(3) * r. El ancho total es (columnas + 0.5) * sqrt(3) * r
-        // para acomodar el desplazamiento de la última columna.
-        final double widthRatio = (colCount + 0.5) * sqrt(3);
+        // Cada columna ocupa 1.5 * r horizontalmente. El ancho total es (columnas * 1.5 * r) + 0.5 * r
+        final double widthRatio = (colCount * 1.5) + 0.5;
 
         // Alto total del tablero:
-        // Cada fila se superpone, ocupando 1.5 * r (o 0.75 * altura hex).
-        // La altura total es (filas * 1.5 * r) + 0.5 * r (por la parte superior/inferior del hexágono más alto/bajo)
-        final double heightRatio = (rowCount * 1.5) + 0.5;
+        // Cada fila ocupa sqrt(3) * r verticalmente. El alto total es (filas + 0.5) * sqrt(3) * r
+        // (El 0.5 es para el offset de la última columna)
+        final double heightRatio = (rowCount + 0.5) * sqrt(3);
 
-        // Calcula el radio que cabe en el espacio disponible
         final double radiusFromWidth = boardPixelWidth / widthRatio;
         final double radiusFromHeight = boardPixelHeight / heightRatio;
-
         final double radius = min(radiusFromWidth, radiusFromHeight);
 
         if (radius <= 0 || radius.isNaN) {
           return const Center(child: Text("Calculando tamaño..."));
         }
 
-        // Vuelve a calcular el ancho y alto total que el tablero RENDEREARÁ con el radio final
+        // Calcula el tamaño total real que el tablero renderizará
         final double totalRenderedWidth = widthRatio * radius;
         final double totalRenderedHeight = heightRatio * radius;
 
-        // Calcula el offset para centrar el tablero en el espacio disponible
+        // Calcula el offset para centrar el tablero
         final Offset centerOffset = Offset(
           (boardPixelWidth - totalRenderedWidth) / 2,
           (boardPixelHeight - totalRenderedHeight) / 2,
@@ -118,13 +105,11 @@ class HexagonBoardWidget extends ConsumerWidget {
   }
 }
 
-/// El Painter que dibuja el tablero en el Canvas
 class _HexagonPainter extends CustomPainter {
   final List<List<Cell>> board;
   final double radius;
   final Offset centerOffset;
   final bool isDarkMode;
-
   final Path _hexPath;
   final Paint _fillPaint = Paint();
   final Paint _strokePaint = Paint()
@@ -143,31 +128,23 @@ class _HexagonPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final int rowCount = board.length;
     final int colCount = board[0].length;
-
     for (int x = 0; x < rowCount; x++) {
       for (int y = 0; y < colCount; y++) {
         final Cell cell = board[x][y];
         if (cell.isBlocked) continue;
-
-        // Calcula el centro en píxeles de este hexágono
         final Offset hexCenter = _hexToPixel(x, y, radius, centerOffset);
-
         _fillPaint.color = _getCellBackgroundColor(cell);
-
         canvas.save();
         canvas.translate(hexCenter.dx, hexCenter.dy);
         canvas.drawPath(_hexPath, _fillPaint);
         canvas.drawPath(_hexPath, _strokePaint);
         canvas.restore();
-
         _drawCellContent(canvas, cell, hexCenter);
       }
     }
   }
 
-  /// Dibuja el contenido de la celda
   void _drawCellContent(Canvas canvas, Cell cell, Offset center) {
-    // ... (Esta función no necesita cambios, está bien) ...
     Widget? contentWidget;
     switch (cell.state) {
       case CellState.flagged:
@@ -205,7 +182,6 @@ class _HexagonPainter extends CustomPainter {
       case CellState.hidden:
         break;
     }
-
     if (contentWidget != null) {
       TextPainter textPainter = TextPainter(
         text: (contentWidget is Text)
@@ -223,7 +199,6 @@ class _HexagonPainter extends CustomPainter {
             : const TextSpan(),
         textDirection: TextDirection.ltr,
       );
-
       textPainter.layout();
       final Offset textOffset = Offset(
         center.dx - textPainter.width / 2,
@@ -233,9 +208,7 @@ class _HexagonPainter extends CustomPainter {
     }
   }
 
-  /// Obtiene el color de fondo de la celda
   Color _getCellBackgroundColor(Cell cell) {
-    // ... (Esta función no necesita cambios, está bien) ...
     switch (cell.state) {
       case CellState.hidden:
       case CellState.flagged:
@@ -255,13 +228,14 @@ class _HexagonPainter extends CustomPainter {
   }
 }
 
-// --- FUNCIONES MATEMÁTICAS DE COORDENADAS ---
+// --- ¡¡¡FUNCIONES MATEMÁTICAS TOTALMENTE NUEVAS PARA FLAT-TOP, ODD-Q!!! ---
 
-/// Crea un Path para un hexágono "pointy top" centrado en (0,0)
+/// Crea un Path para un hexágono "FLAT top" centrado en (0,0)
 Path _createHexPath(double radius) {
   final Path path = Path();
   for (int i = 0; i < 6; i++) {
-    final double angle = (pi / 3) * i + (pi / 6); // +pi/6 para "pointy top"
+    // ¡Ángulo 0 para "flat top"! (en lugar de pi/6)
+    final double angle = (pi / 3) * i;
     final double x = radius * cos(angle);
     final double y = radius * sin(angle);
     if (i == 0) {
@@ -274,56 +248,51 @@ Path _createHexPath(double radius) {
   return path;
 }
 
-// --- CORREGIDO: Lógica de _hexToPixel (V6.0 - FINAL) ---
-/// Convierte coordenadas de la cuadrícula "odd-q" (x, y) a píxeles (Offset)
+/// Convierte coordenadas "odd-q" (x, y) a píxeles (Offset)
 /// (x=row, y=col)
-/// Esto coincide con la lógica de vecinos de 'game_provider.dart'
 Offset _hexToPixel(int x, int y, double radius, Offset centerOffset) {
-  final double hexWidth = sqrt(3) * radius; // Ancho de un hexágono
-  final double hexHeight = 2 * radius; // Altura de un hexágono
+  final double hexWidth = 2 * radius; // Ancho de un hexágono (de lado a lado)
+  final double hexHeight =
+      sqrt(3) * radius; // Altura de un hexágono (de punta a punta)
 
-  // ¡¡¡CORRECCIÓN CLAVE!!!
-  // `x` en píxeles: Cada columna se mueve `hexWidth` horizontalmente
-  // `y` en píxeles: Cada fila se mueve 0.75 * hexHeight verticalmente.
+  // Desplazamiento horizontal por columna
+  double pixelX = radius * 1.5 * y;
 
-  double pixelX = hexWidth * y;
-  double pixelY = (hexHeight * 0.75) * x; // <-- 0.75 * altura (1.5 * r)
-
-  // Aplica el desplazamiento vertical para columnas impares
+  // Desplazamiento vertical por fila
+  // Las columnas impares se desplazan media altura del hexágono hacia abajo
+  double pixelY = hexHeight * x;
   if (y % 2 != 0) {
-    // El offset es media *altura de fila* ( (1.5 * r) / 2 )
-    // ¡NO! El offset es media *altura de hexágono* (r)
-    pixelY += hexHeight * 0.5; // <-- offset by half height (radius)
+    pixelY += hexHeight * 0.5; // Desplaza media altura (radius * sqrt(3) / 2)
   }
 
   // Suma el offset de centrado general del tablero
   // y añade un padding inicial para que el hex (0,0) se dibuje completo
   return Offset(
-    pixelX + centerOffset.dx + (hexWidth / 2),
-    pixelY + centerOffset.dy + radius,
+    pixelX + centerOffset.dx + radius,
+    pixelY + centerOffset.dy + (hexHeight / 2),
   );
 }
 
 /// Convierte píxeles (Offset) a coordenadas axiales (q, r)
 (int, int) _pixelToAxial(Offset pixel, double radius, Offset centerOffset) {
-  final double hexWidth = sqrt(3) * radius;
-  final double hexHeight = 2 * radius;
+  final double hexWidth = 2 * radius;
+  final double hexHeight = sqrt(3) * radius;
 
-  // Invierte el offset de centrado y el padding inicial (hexWidth/2, radius)
-  final double adjustedX = pixel.dx - centerOffset.dx - (hexWidth / 2);
-  final double adjustedY = pixel.dy - centerOffset.dy - radius;
+  // Invierte el offset de centrado y el padding inicial
+  final double adjustedX = pixel.dx - centerOffset.dx - radius;
+  final double adjustedY = pixel.dy - centerOffset.dy - (hexHeight / 2);
 
-  // Calculamos una "columna aproximada" para saber si aplicar el offset inverso
-  // Esto es para deshacer el `if (y % 2 != 0)` de `_hexToPixel`
-  int roughCol = (adjustedX / hexWidth).round();
+  // Calcula una "columna aproximada" para saber si aplicar el offset inverso
+  int roughCol = (adjustedX / (radius * 1.5))
+      .round(); // Dividir por el paso horizontal
   double finalAdjustedY = adjustedY;
   if (roughCol % 2 != 0) {
     finalAdjustedY -= hexHeight * 0.5; // Resta el offset que se sumó al dibujar
   }
 
-  // Convierte píxeles ajustados a coordenadas axiales fraccionarias (pointy top)
-  double q_frac = (sqrt(3) / 3 * adjustedX - 1 / 3 * finalAdjustedY) / radius;
-  double r_frac = (2 / 3 * finalAdjustedY) / radius;
+  // Convierte píxeles ajustados a coordenadas axiales fraccionarias (flat top)
+  double q_frac = (2 / 3 * adjustedX) / radius;
+  double r_frac = (-1 / 3 * adjustedX + sqrt(3) / 3 * finalAdjustedY) / radius;
 
   // Redondea a las coordenadas axiales enteras más cercanas
   return _axialRound(q_frac, r_frac);
@@ -335,17 +304,14 @@ Offset _hexToPixel(int x, int y, double radius, Offset centerOffset) {
   int q_round = q.round();
   int r_round = r.round();
   int s_round = s.round();
-
   double q_diff = (q_round - q).abs();
   double r_diff = (r_round - r).abs();
   double s_diff = (s_round - s).abs();
-
   if (q_diff > r_diff && q_diff > s_diff) {
     q_round = -r_round - s_round;
   } else if (r_diff > s_diff) {
     r_round = -q_round - s_round;
   }
-
   return (q_round, r_round);
 }
 
@@ -355,11 +321,11 @@ Offset _hexToPixel(int x, int y, double radius, Offset centerOffset) {
   final (int q, int r) = _pixelToAxial(pixel, radius, centerOffset);
 
   // 2. Convierte axial (q, r) a "odd-q" offset (x, y)
-  // q = y (columna)
-  // r = x - (y - (y & 1)) ~/ 2 (fila)
+  // x = r (fila)
+  // y = q + (r - (r&1)) ~/ 2 (columna)
 
-  final int y = q;
-  final int x = r + (q - (q & 1)) ~/ 2;
+  final int x = r; // Fila
+  final int y = q + (r - (r & 1)) ~/ 2; // Columna
 
   return (x, y);
 }
