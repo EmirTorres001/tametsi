@@ -1,0 +1,13 @@
+{
+  "name": "Anillo Hex",
+  "rows": 5,
+  "cols": 5,
+  "topology": "hexagon",
+  "layout": [
+    "01M10",
+    "11011",
+    "M000M",
+    "11011",
+    "01M10"
+  ]
+}

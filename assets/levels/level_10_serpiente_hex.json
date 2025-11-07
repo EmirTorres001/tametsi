@@ -1,0 +1,14 @@
+{
+  "name": "Serpiente Hex",
+  "rows": 6,
+  "cols": 6,
+  "topology": "hexagon",
+  "layout": [
+    "11M000",
+    "011100",
+    "00M110",
+    "0011M0",
+    "000111",
+    "0000M1"
+  ]
+}

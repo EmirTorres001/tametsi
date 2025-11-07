@@ -1,0 +1,14 @@
+{
+  "name": "Nido Hex",
+  "rows": 6,
+  "cols": 6,
+  "topology": "hexagon",
+  "layout": [
+    "011110",
+    "11M1M1",
+    "1M111M",
+    "11M1M1",
+    "1M111M",
+    "011110"
+  ]
+}

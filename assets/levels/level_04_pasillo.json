@@ -1,0 +1,11 @@
+{
+  "name": "Pasillo",
+  "rows": 3,
+  "cols": 8,
+  "topology": "square",
+  "layout": [
+    "1M1111M1",
+    "11100111",
+    "M111M11M"
+  ]
+}

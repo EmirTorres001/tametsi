@@ -1,0 +1,13 @@
+{
+  "name": "Flecha Hex",
+  "rows": 5,
+  "cols": 6,
+  "topology": "hexagon",
+  "layout": [
+    "001100",
+    "011110",
+    "11M111",
+    "011110",
+    "001100"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "name": "El Foso",
+  "rows": 7,
+  "cols": 7,
+  "topology": "square",
+  "layout": [
+    "MMMMMMM",
+    "M11111M",
+    "M11111M",
+    "M11M11M",
+    "M11111M",
+    "M11111M",
+    "MMMMMMM"
+  ]
+}

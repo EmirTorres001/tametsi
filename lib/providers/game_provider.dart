@@ -286,30 +286,30 @@ List<List<int>> _getNeighbors(
       break;
 
     case 'hexagon':
-      // --- ¡NUEVA LÓGICA DE VECINOS PARA "FLAT-TOP, ODD-Q"! ---
+      // --- ¡NUEVA LÓGICA DE VECINOS PARA "FLAT-TOP, ODD-R"! ---
       // (x=fila, y=columna)
-      // "odd-q" significa que las columnas impares (y=1, 3, 5...) están desplazadas verticalmente
+      // "odd-r" significa que las filas impares (x=1, 3, 5...) están desplazadas
 
-      bool isOddCol = y % 2 != 0;
+      bool isOddRow = x % 2 != 0;
       List<List<int>> directions;
-      if (isOddCol) {
-        // Vecinos de una columna impar (desplazada hacia abajo)
+      if (isOddRow) {
+        // Vecinos de una fila impar (desplazada a la derecha)
         directions = [
           [0, -1], // O
           [0, 1], // E
           [-1, 0], // NO
-          [1, 0], // SO
           [-1, 1], // NE
+          [1, 0], // SO
           [1, 1], // SE
         ];
       } else {
-        // Vecinos de una columna par
+        // Vecinos de una fila par
         directions = [
           [0, -1], // O
           [0, 1], // E
           [-1, -1], // NO
-          [1, -1], // SO
           [-1, 0], // NE
+          [1, -1], // SO
           [1, 0], // SE
         ];
       }

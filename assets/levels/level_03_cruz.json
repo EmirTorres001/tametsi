@@ -1,0 +1,13 @@
+{
+  "name": "La Cruz",
+  "rows": 5,
+  "cols": 5,
+  "topology": "square",
+  "layout": [
+    "01M10",
+    "11111",
+    "M111M",
+    "11111",
+    "01M10"
+  ]
+}
